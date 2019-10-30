@@ -53,8 +53,9 @@ object Sudoku{
   def solveConcurrent(init: Partial){
     // Stack to store partial solutions that we might back-track to.
     //val stack = new scala.collection.mutable.Stack[Partial]
+    val num_workers = 10
     val stack = new PooledStack[Partial]
-    val terminationDetectingPool = new TerminationDetectingPool(stack, 10)
+    val terminationDetectingPool = new TerminationDetectingPool(stack, num_workers)
     stack.add(init)
     val done = new AtomicBoolean(false)
     def worker = {
@@ -77,7 +78,7 @@ object Sudoku{
 	  }
       }}
     } // end of while
-  ox.cads.util.ThreadUtil.runSystem(10, worker)}
+  ox.cads.util.ThreadUtil.runSystem(num_workers, worker)}
 
   /** A list of files containing possible puzzles */
   private val allPossibleFiles = 
