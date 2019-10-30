@@ -10,6 +10,20 @@
 
 import ox.cads.util.Profiler
 import java.util.concurrent.atomic.AtomicBoolean
+import ox.cads.collection.Pool
+import ox.cads.collection.TerminationDetectingPool
+import ox.cads.collection.LockFreeStack
+
+class PooledStack[Partial] extends LockFreeStack[Partial] with Pool[Partial]  {
+  def add(partial: Partial){
+    this.push(partial)
+  }
+  //return type is Option[Partial] not sure what this means
+  def get() : Option[Partial] = {
+    this.pop
+  }
+
+}
 
 object Sudoku{
   /** Solve the puzzle defined by init */
@@ -39,13 +53,14 @@ object Sudoku{
   def solveConcurrent(init: Partial){
     // Stack to store partial solutions that we might back-track to.
     //val stack = new scala.collection.mutable.Stack[Partial]
-    val stack = new ox.cads.collection.LockFreeStack[Partial]
-    stack.push(init)
+    val stack = new PooledStack[Partial]
+    val terminationDetectingPool = new TerminationDetectingPool(stack, 10)
+    stack.add(init)
     val done = new AtomicBoolean(false)
     def worker = {
     while(!done.get()){
-      val val_pop = stack.pop
-      if(val_pop == None){}
+      val val_pop = terminationDetectingPool.get
+      if(val_pop == None){done.set(true)}
       else {val partial = val_pop.get
       if(partial.complete){  // done!
 	if(done.compareAndSet(false, true)){ partial.printPartial}
@@ -56,7 +71,7 @@ object Sudoku{
 	// Consider all values to play there
 	for(d <- 1 to 9)
 	  if(partial.canPlay(i,j,d)){
-	    val p1 = partial.play(i,j,d); stack.push(p1)
+	    val p1 = partial.play(i,j,d); terminationDetectingPool.add(p1)
 
           }
 	  }
