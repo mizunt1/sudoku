@@ -18,7 +18,8 @@ class PooledStack[Partial] extends LockFreeStack[Partial] with Pool[Partial]  {
   def add(partial: Partial){
     this.push(partial)
   }
-  //return type is Option[Partial] not sure what this means
+  //Option[Partial] will return a Partial object if it is there, if not it will 
+  // return None
   def get() : Option[Partial] = {
     this.pop
   }
@@ -54,12 +55,19 @@ object Sudoku{
     // Stack to store partial solutions that we might back-track to.
     //val stack = new scala.collection.mutable.Stack[Partial]
     val num_workers = 10
+    // stack will either be None, or a Partial
+    // PooledStack class extends Pool which is a stack which can return a None value
+    // if there is nothing in Pool
     val stack = new PooledStack[Partial]
+    // change this PooledStack object in to another object, the TDP
+    //
     val terminationDetectingPool = new TerminationDetectingPool(stack, num_workers)
     stack.add(init)
     val done = new AtomicBoolean(false)
     def worker = {
     while(!done.get()){
+      // tried to get from the pool until a value us available.
+      // if not available, returns None
       val val_pop = terminationDetectingPool.get
       if(val_pop == None){done.set(true)}
       else {val partial = val_pop.get
