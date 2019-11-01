@@ -37,7 +37,7 @@ class PooledStack[Partial] extends LockFreeStack[Partial] with Pool[Partial]  {
 
 object Sudoku{
   /** Solve the puzzle defined by init */
-  def solve(init: Partial){
+  def solveSeq(init: Partial){
     // Stack to store partial solutions that we might back-track to.
     // initialise the Stack with the first Partial, read in from file
     val stack = new scala.collection.mutable.Stack[Partial]
@@ -73,6 +73,9 @@ object Sudoku{
     // terminationDetectingPool takes a Pool object which is being called by many threads
     // A value will be returned from the TDP 
     // or None will be returned if all threads are returning None
+    // this ensures for the time when many threads are pulling and all is retunrinig none
+    // this will only happen when there is no solution to the sudoku
+    // as if there is a solution, the solution will be found before the stacklen == 0
     val terminationDetectingPool = new TerminationDetectingPool(stack, num_workers)
     val done = new AtomicBoolean(false)
     // allows for all workers to be stopped when solution is found.
@@ -86,7 +89,8 @@ object Sudoku{
       if(partial.complete){  // done!
         // a partial object will return complete if
         // all values are not zero in the grid
-	if(done.compareAndSet(false, true)){ partial.printPartial}
+	if(done.compareAndSet(false, true)){partial.printPartial;
+        terminationDetectingPool.signalDone}
       }
       else{
 	// Choose position to play if partial is not complete
@@ -120,6 +124,7 @@ object Sudoku{
     var adv = false // are we using the AdvancedPartial?
     var all = false // are we doing all files in allFiles?
     var allPoss = false // are we doing all files in allPossibleFiles?
+    var seq = false
     // parse command line arguments
     var i = 0
     while(i < args.length){
@@ -127,6 +132,7 @@ object Sudoku{
       else if (args(i)=="-a"){ adv = true; i+=1 }
       else if (args(i) == "--all"){ all = true; i += 1 }
       else if (args(i) == "--allPoss"){ allPoss = true; i += 1 }
+      else if (args(i) == "--seq") {seq = true; i +=1}
       else{ fname = args(i); i += 1 }
     }
     assert(all || allPoss || fname != "")
@@ -139,11 +145,16 @@ object Sudoku{
     }
 
     // Solve count times
+    val solve = (f: String) => {solveSeq(mkPartial(f))}
+    if(seq == false){
+      val solve = (f: String) => {solveConcurrent(mkPartial(f))}}
+
+
     for(i <- 0 until count)
-      if(all) for(f <- allFiles){ println(f); solveConcurrent(mkPartial(f)) }
+      if(all) for(f <- allFiles){ println(f); solve(f) }
       else if(allPoss) 
-	for(f <- allPossibleFiles){ println(f); solveConcurrent(mkPartial(f)) }
-      else solveConcurrent(mkPartial(fname))
+	for(f <- allPossibleFiles){ println(f); solve(f) }
+      else solve(fname)
 
     println("Time taken: "+(System.currentTimeMillis()-t0))
     Profiler.report
@@ -151,8 +162,8 @@ object Sudoku{
 }
 
 // notes:
-// as n increases, the code crashes. n = 20 is fine but n= 100 is not
-// not sure why, are there too many threads going on? 
-// is solveConcurrent() I think the term is "blocking"? i.e. does the first call of 
-// solveConcurrent() finish before it is called again?
+//scala Sudoku.scala -n 100 --all
+//t = 23449
+//scala Sudoku.scala -n 100 --all --seq 
+//t = 
 
