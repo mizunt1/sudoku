@@ -163,7 +163,7 @@ object Sudoku{
 
 // notes:
 //scala Sudoku.scala -n 100 --all
-//t = 23449
-//scala Sudoku.scala -n 100 --all --seq 
-//t = 
+//t = 240488
+//scala Sudoku.scala --all -n 1000 --seq
+//t = 210458
 
