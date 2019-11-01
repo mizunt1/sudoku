@@ -102,7 +102,7 @@ object Sudoku{
       }}
     } // end of while
   ox.cads.util.ThreadUtil.runSystem(num_workers, worker)
-}
+  }
 
   /** A list of files containing possible puzzles */
   private val allPossibleFiles = 
@@ -149,4 +149,10 @@ object Sudoku{
     Profiler.report
   }    
 }
+
+// notes:
+// as n increases, the code crashes. n = 20 is fine but n= 100 is not
+// not sure why, are there too many threads going on? 
+// is solveConcurrent() I think the term is "blocking"? i.e. does the first call of 
+// solveConcurrent() finish before it is called again?
 
