@@ -64,8 +64,7 @@ object Sudoku{
   def solveConcurrent(init: Partial){
     // This function includes the algorithm to solve the sudoku
     // it also runs the function and splits it up in to many threads
-
-    val num_workers = 10
+    val num_workers = 6
     // create new PooledStack object
     val stack = new PooledStack[Partial]
     // add the first partial solution to the stack
@@ -124,7 +123,7 @@ object Sudoku{
     var adv = false // are we using the AdvancedPartial?
     var all = false // are we doing all files in allFiles?
     var allPoss = false // are we doing all files in allPossibleFiles?
-    var seq = false
+    var conc = true
     // parse command line arguments
     var i = 0
     while(i < args.length){
@@ -132,7 +131,7 @@ object Sudoku{
       else if (args(i)=="-a"){ adv = true; i+=1 }
       else if (args(i) == "--all"){ all = true; i += 1 }
       else if (args(i) == "--allPoss"){ allPoss = true; i += 1 }
-      else if (args(i) == "--seq") {seq = true; i +=1}
+      else if (args(i) == "--conc") {conc = true; i +=1}
       else{ fname = args(i); i += 1 }
     }
     assert(all || allPoss || fname != "")
@@ -145,10 +144,10 @@ object Sudoku{
     }
 
     // Solve count times
+    // delete line as appropriate for
+    //concurrent or seq
+//    val solve = (f: String) => {solveConcurrent(mkPartial(f))}
     val solve = (f: String) => {solveSeq(mkPartial(f))}
-    if(seq == false){
-      val solve = (f: String) => {solveConcurrent(mkPartial(f))}}
-
 
     for(i <- 0 until count)
       if(all) for(f <- allFiles){ println(f); solve(f) }
@@ -162,8 +161,28 @@ object Sudoku{
 }
 
 // notes:
-//scala Sudoku.scala -n 100 --all
-//t = 240488
-//scala Sudoku.scala --all -n 1000 --seq
-//t = 210458
+//with 4 threads, running concurrently
+// scala Sudoku.scala -n 10 --all
+// t= 1431
+//running sequentially
+// scala Sudoku.scala -n 10 --all
+// t= 2164
+
+//with 6 threads, running concurrently
+// scala Sudoku.scala -n 10 --all
+// t= 1985
+// running sequentially
+// scala Sudoku.scala -n 10 --all
+// t= 2306
+
+//therefore there was a slight speed up when running concurrently.
+//however whilst using the advanced partials, it was difficult to get a speed up comparing the threaded and non threaded
+//ADVANCED
+//with 6 threads, running concurrently
+// scala Sudoku.scala -n 10 --all -a
+// t= 420
+//running sequentially
+// scala Sudoku.scala -n 10 --all -a
+// t= 416
+
 
